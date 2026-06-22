@@ -3,3 +3,8 @@ services:
     class: Drupal\dependency_injection_exercise\Service\PhotoListService
     arguments: ['@http_client']
 
+  dependency_injection_exercise.photos_breadcrumb_builder:
+    class: Drupal\dependency_injection_exercise\Breadcrumb\PhotosBreadcrumbBuilder
+    tags:
+      - { name: breadcrumb_builder, priority: 100 }
+
