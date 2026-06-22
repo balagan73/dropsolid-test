@@ -8,3 +8,9 @@ services:
     tags:
       - { name: breadcrumb_builder, priority: 100 }
 
+  dependency_injection_exercise.language_manager_decorator:
+    class: Drupal\dependency_injection_exercise\Service\LanguageManagerDecorator
+    decorates: language_manager
+    decoration_priority: 0
+    arguments: ['@dependency_injection_exercise.language_manager_decorator.inner']
+
