@@ -2,3 +2,8 @@ services:
   dependency_injection_exercise.photo_list:
     class: Drupal\dependency_injection_exercise\Service\PhotoListService
     arguments: ['@http_client']
+
+  dependency_injection_exercise.mail_manager_decorator:
+    class: Drupal\dependency_injection_exercise\Service\MailManagerDecorator
+    decorates: plugin.manager.mail
+    arguments: ['@.inner']
