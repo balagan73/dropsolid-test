@@ -1,15 +1,31 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\dependency_injection_exercise\Controller;
 
-use Drupal\Component\Serialization\Json;
 use Drupal\Core\Controller\ControllerBase;
+use Drupal\dependency_injection_exercise\Service\PhotoListService;
 use GuzzleHttp\Exception\GuzzleException;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Provides the rest output.
  */
-class RestOutputController extends ControllerBase {
+final class RestOutputController extends ControllerBase {
+
+  public function __construct(
+    private readonly PhotoListService $photoListService,
+  ) {}
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container): static {
+    return new static(
+      $container->get('dependency_injection_exercise.photo_list'),
+    );
+  }
 
   /**
    * Displays the photos.
@@ -18,7 +34,6 @@ class RestOutputController extends ControllerBase {
    *   A renderable array representing the photos.
    */
   public function showPhotos(): array {
-    // Setup build caching.
     $build = [
       '#cache' => [
         'max-age' => 60,
@@ -28,11 +43,8 @@ class RestOutputController extends ControllerBase {
       ],
     ];
 
-    // Try to obtain the photo data via the external API.
     try {
-      $response = \Drupal::httpClient()->request('GET', 'https://jsonplaceholder.typicode.com/albums/5/photos');
-      $raw_data = $response->getBody()->getContents();
-      $data = Json::decode($raw_data);
+      $build['photos'] = $this->photoListService->getPhotos(5);
     }
     catch (GuzzleException $e) {
       $build['error'] = [
@@ -40,18 +52,7 @@ class RestOutputController extends ControllerBase {
         '#tag' => 'p',
         '#value' => $this->t('No photos available.'),
       ];
-      return $build;
     }
-
-    // Build a listing of photos from the photo data.
-    $build['photos'] = array_map(static function ($item) {
-      return [
-        '#theme' => 'image',
-        '#uri' => $item['thumbnailUrl'],
-        '#alt' => $item['title'],
-        '#title' => $item['title'],
-      ];
-    }, $data);
 
     return $build;
   }

@@ -1,0 +1,4 @@
+services:
+  dependency_injection_exercise.photo_list:
+    class: Drupal\dependency_injection_exercise\Service\PhotoListService
+    arguments: ['@http_client']

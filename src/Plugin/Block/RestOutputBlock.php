@@ -1,10 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\dependency_injection_exercise\Plugin\Block;
 
-use Drupal\Component\Serialization\Json;
 use Drupal\Core\Block\BlockBase;
+use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\dependency_injection_exercise\Service\PhotoListService;
 use GuzzleHttp\Exception\GuzzleException;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Provides a 'RestOutputBlock' block.
@@ -14,13 +18,38 @@ use GuzzleHttp\Exception\GuzzleException;
  *  admin_label = @Translation("Rest output block"),
  * )
  */
-class RestOutputBlock extends BlockBase {
+final class RestOutputBlock extends BlockBase implements ContainerFactoryPluginInterface {
+
+  public function __construct(
+    array $configuration,
+    string $plugin_id,
+    mixed $plugin_definition,
+    private readonly PhotoListService $photoListService,
+  ) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(
+    ContainerInterface $container,
+    array $configuration,
+    $plugin_id,
+    $plugin_definition,
+  ): static {
+    return new static(
+      $configuration,
+      $plugin_id,
+      $plugin_definition,
+      $container->get('dependency_injection_exercise.photo_list'),
+    );
+  }
 
   /**
    * {@inheritdoc}
    */
   public function build(): array {
-    // Setup build caching.
     $build = [
       '#cache' => [
         'max-age' => 60,
@@ -30,11 +59,8 @@ class RestOutputBlock extends BlockBase {
       ],
     ];
 
-    // Try to obtain the photo data via the external API.
     try {
-      $response = \Drupal::httpClient()->request('GET', sprintf('https://jsonplaceholder.typicode.com/albums/%s/photos', random_int(1, 20)));
-      $raw_data = $response->getBody()->getContents();
-      $data = Json::decode($raw_data);
+      $build['photos'] = $this->photoListService->getPhotos(random_int(1, 20));
     }
     catch (GuzzleException $e) {
       $build['error'] = [
@@ -42,18 +68,7 @@ class RestOutputBlock extends BlockBase {
         '#tag' => 'p',
         '#value' => $this->t('No photos available.'),
       ];
-      return $build;
     }
-
-    // Build a listing of photos from the photo data.
-    $build['photos'] = array_map(static function ($item) {
-      return [
-        '#theme' => 'image',
-        '#uri' => $item['thumbnailUrl'],
-        '#alt' => $item['title'],
-        '#title' => $item['title'],
-      ];
-    }, $data);
 
     return $build;
   }

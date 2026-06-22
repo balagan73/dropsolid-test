@@ -14,7 +14,7 @@ function dependency_injection_exercise_install(): void {
   MenuLinkContent::create([
     'title' => 'Photos',
     'link' => [
-      'uri' => 'internal:/dropsolid/example/photos'
+      'uri' => 'internal:/dropsolid/example/photos',
     ],
     'menu_name' => 'main',
     'expanded' => TRUE,
